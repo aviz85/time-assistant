@@ -62,8 +62,39 @@ export const TimelineProvider: React.FC<TimelineProviderProps> = ({ children }) 
     }
   };
 
+  const updateEventTime = async (id: string, newTime: string) => {
+    try {
+      const response = await fetch(`/api/events/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ time: newTime }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update event time');
+      }
+
+      setEvents(prev => 
+        prev.map(event => 
+          event.id === id ? { ...event, time: newTime } : event
+        )
+      );
+    } catch (error) {
+      console.error('Failed to update event time:', error);
+    }
+  };
+
   return (
-    <TimelineContext.Provider value={{ events, addEvent, editEvent, deleteEvent, refreshEvents }}>
+    <TimelineContext.Provider value={{ 
+      events, 
+      addEvent, 
+      editEvent, 
+      deleteEvent, 
+      updateEventTime,
+      refreshEvents 
+    }}>
       {children}
     </TimelineContext.Provider>
   );

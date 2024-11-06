@@ -192,6 +192,23 @@ app.delete('/api/events/:id', async (req, res) => {
   }
 });
 
+app.patch('/api/events/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { time } = req.body;
+    
+    const events = await storage.loadEvents();
+    const updatedEvents = events.map(event => 
+      event.id === id ? { ...event, time } : event
+    );
+    
+    await storage.saveEvents(updatedEvents);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update event' });
+  }
+});
+
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

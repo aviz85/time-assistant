@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTimeline } from './store/TimelineContext';
 import { Timeline } from './components/Timeline';
 import { ChatInterface } from './components/ChatInterface';
@@ -7,20 +7,19 @@ import { useChat } from 'ai/react';
 import { adaptAIMessagesToChatMessages } from './lib/message-adapter';
 
 function App() {
-  const { events, deleteEvent, refreshEvents } = useTimeline();
+  const { events, deleteEvent } = useTimeline();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { messages, append } = useChat({
     api: '/api/chat',
     initialMessages: [
-      { role: 'system', content: systemPrompt([]) },
+      { role: 'system', content: systemPrompt(events) },
       { role: 'assistant', content: "Hello! I'm your time management assistant. How can I help you today?" }
     ],
-    onResponse: async () => {
+    onResponse: () => {
       setIsLoading(false);
       setError(null);
-      await refreshEvents();
     },
     onError: (error) => {
       console.error('Chat error:', error);
@@ -28,12 +27,6 @@ function App() {
       setIsLoading(false);
     }
   });
-
-  useEffect(() => {
-    if (messages.length > 0) {
-      messages[0].content = systemPrompt(events);
-    }
-  }, [events]);
 
   const handleSendMessage = async (text: string) => {
     setIsLoading(true);
