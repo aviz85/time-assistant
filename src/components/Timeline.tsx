@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { ScrollArea } from "./ui/scroll-area"
 import { Button } from "./ui/button"
@@ -14,43 +14,51 @@ interface TimelineProps {
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
+const MINUTES_IN_DAY = 24 * 60
+const SECONDS_IN_DAY = MINUTES_IN_DAY * 60
 
 export const Timeline: React.FC<TimelineProps> = ({ events = [], onDelete }) => {
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  
-  const getCurrentTimePosition = () => {
-    const now = new Date();
-    const minutes = now.getHours() * 60 + now.getMinutes();
-    return (minutes * 100) / 1440; // Convert to percentage
-  };
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const [currentTime, setCurrentTime] = useState<number>(0)
 
-  const scrollToCurrentTime = () => {
-    if (scrollAreaRef.current) {
-      const currentPosition = getCurrentTimePosition();
-      const scrollPosition = (currentPosition / 100) * scrollAreaRef.current.scrollHeight;
-      scrollAreaRef.current.scrollTop = scrollPosition - window.innerHeight / 3;
-    }
-  };
+  const calculateExactTimePercentage = () => {
+    const now = new Date()
+    const hours = now.getHours()
+    const minutes = now.getMinutes()
+    const seconds = now.getSeconds()
+    const milliseconds = now.getMilliseconds()
 
-  useEffect(() => {
-    scrollToCurrentTime();
-    const interval = setInterval(() => {
-      const timeLine = document.getElementById('current-time-line');
-      if (timeLine) {
-        timeLine.style.top = `${getCurrentTimePosition()}%`;
-      }
-    }, 60000); // Update every minute
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const calculateEventPosition = (time: string) => {
-    const [hours, minutes] = time.split(':').map(Number)
-    return (hours * 60 + minutes) * (100 / 1440) // (100% / minutes in a day)
+    const totalMilliseconds = (hours * 3600 + minutes * 60 + seconds) * 1000 + milliseconds
+    return (totalMilliseconds * 100) / (SECONDS_IN_DAY * 1000)
   }
 
-  const calculateEventHeight = (duration: number) => {
-    return (duration / 60) * (100 / 24) // (100% / hours in a day)
+  useEffect(() => {
+    // Initial position
+    setCurrentTime(calculateExactTimePercentage())
+
+    // Update every 100ms for smooth movement
+    const interval = setInterval(() => {
+      setCurrentTime(calculateExactTimePercentage())
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // Auto-scroll to current time
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      const scrollPosition = (currentTime / 100) * scrollAreaRef.current.scrollHeight
+      scrollAreaRef.current.scrollTop = scrollPosition - window.innerHeight / 3
+    }
+  }, [Math.floor(currentTime)]) // Scroll only when percentage changes significantly
+
+  const getEventPosition = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number)
+    return ((hours * 60 + minutes) * 100) / MINUTES_IN_DAY
+  }
+
+  const getEventHeight = (duration: number): number => {
+    return (duration * 100) / MINUTES_IN_DAY
   }
 
   return (
@@ -59,11 +67,10 @@ export const Timeline: React.FC<TimelineProps> = ({ events = [], onDelete }) => 
         <div className="relative p-4">
           <h2 className="text-lg font-semibold mb-4">Today&apos;s Schedule</h2>
           <div className="relative">
-            {/* Current time indicator */}
+            {/* Time Indicator */}
             <div
-              id="current-time-line"
-              className="absolute left-0 right-0 z-50 pointer-events-none"
-              style={{ top: `${getCurrentTimePosition()}%` }}
+              className="absolute left-0 right-0 z-50 pointer-events-none transition-[top] duration-100"
+              style={{ top: `${currentTime}%` }}
             >
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-red-500" />
@@ -71,10 +78,10 @@ export const Timeline: React.FC<TimelineProps> = ({ events = [], onDelete }) => 
               </div>
             </div>
 
-            {/* Hour markers */}
+            {/* Hour Lines */}
             {HOURS.map((hour) => (
-              <div key={hour} className="flex items-center h-20 border-t border-border">
-                <span className="text-xs text-muted-foreground -mt-2">
+              <div key={hour} className="relative h-20 border-t border-border">
+                <span className="absolute -top-3 left-0 text-xs text-muted-foreground">
                   {hour.toString().padStart(2, '0')}:00
                 </span>
               </div>
@@ -90,8 +97,8 @@ export const Timeline: React.FC<TimelineProps> = ({ events = [], onDelete }) => 
                       <div
                         className="absolute left-8 right-2 bg-primary/10 border border-primary/20 rounded p-2 overflow-hidden"
                         style={{
-                          top: `${calculateEventPosition(event.time)}%`,
-                          height: `${calculateEventHeight(event.duration)}%`,
+                          top: `${getEventPosition(event.time)}%`,
+                          height: `${getEventHeight(event.duration)}%`,
                           minHeight: '20px'
                         }}
                       >
