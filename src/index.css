@@ -31,3 +31,20 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* Add to your existing styles */
+.bg-red-50 {
+  background-color: #fef2f2;
+}
+
+.border-red-500 {
+  border-color: #ef4444;
+}
+
+.text-red-400 {
+  color: #f87171;
+}
+
+.text-red-700 {
+  color: #b91c1c;
+}

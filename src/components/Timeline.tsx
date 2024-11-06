@@ -4,16 +4,16 @@ import { Event } from '../types';
 import { formatTime } from '../lib/timeline-utils';
 
 interface TimelineProps {
-  events: Event[];
+  events?: Event[];
   onDelete: (id: string) => void;
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ events, onDelete }) => {
+export const Timeline: React.FC<TimelineProps> = ({ events = [], onDelete }) => {
   return (
     <div className="w-64 h-screen bg-gray-50 border-l border-gray-200 p-4 overflow-y-auto">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Today's Schedule</h2>
       <div className="space-y-4">
-        {events.length === 0 ? (
+        {(!events || events.length === 0) ? (
           <p className="text-gray-500 text-sm text-center">No events scheduled</p>
         ) : (
           events

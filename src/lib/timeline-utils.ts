@@ -1,5 +1,5 @@
 export const generateEventId = () => {
-  return Math.random().toString(36).substr(2, 9);
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
 export const formatTime = (time: string) => {
