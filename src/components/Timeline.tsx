@@ -17,6 +17,18 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const MINUTES_IN_DAY = 24 * 60
 const SECONDS_IN_DAY = MINUTES_IN_DAY * 60
 
+// Add color options
+const EVENT_COLORS = [
+  'bg-blue-100 border-blue-200',
+  'bg-green-100 border-green-200',
+  'bg-purple-100 border-purple-200',
+  'bg-yellow-100 border-yellow-200',
+  'bg-pink-100 border-pink-200',
+  'bg-orange-100 border-orange-200',
+  'bg-teal-100 border-teal-200',
+  'bg-indigo-100 border-indigo-200',
+]
+
 export const Timeline: React.FC<TimelineProps> = ({ events = [], onDelete }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [currentTime, setCurrentTime] = useState<number>(0)
@@ -61,6 +73,23 @@ export const Timeline: React.FC<TimelineProps> = ({ events = [], onDelete }) => 
     return (duration * 100) / MINUTES_IN_DAY
   }
 
+  // Get consistent color for each event based on its ID
+  const getEventColor = (eventId: string) => {
+    const colorIndex = Math.abs(hashString(eventId)) % EVENT_COLORS.length
+    return EVENT_COLORS[colorIndex]
+  }
+
+  // Simple string hash function
+  const hashString = (str: string) => {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32bit integer
+    }
+    return hash
+  }
+
   return (
     <div className="w-64 h-screen bg-background border-l">
       <ScrollArea className="h-full" ref={scrollAreaRef}>
@@ -95,7 +124,7 @@ export const Timeline: React.FC<TimelineProps> = ({ events = [], onDelete }) => 
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div
-                        className="absolute left-8 right-2 bg-primary/10 border border-primary/20 rounded p-2 overflow-hidden"
+                        className={`absolute left-8 right-2 border rounded p-2 overflow-hidden ${getEventColor(event.id)}`}
                         style={{
                           top: `${getEventPosition(event.time)}%`,
                           height: `${getEventHeight(event.duration)}%`,
