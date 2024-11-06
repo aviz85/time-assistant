@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { Trash2 } from 'lucide-react'
 import { ScrollArea } from "./ui/scroll-area"
 import { Button } from "./ui/button"
@@ -15,16 +15,35 @@ interface TimelineProps {
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
-// Add event colors
-const EVENT_COLORS = [
-  'bg-blue-100 border-blue-200',
-  'bg-green-100 border-green-200',
-  'bg-purple-100 border-purple-200',
-  'bg-orange-100 border-orange-200',
-  'bg-pink-100 border-pink-200',
-]
-
 export const Timeline: React.FC<TimelineProps> = ({ events = [], onDelete }) => {
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
+  const getCurrentTimePosition = () => {
+    const now = new Date();
+    const minutes = now.getHours() * 60 + now.getMinutes();
+    return (minutes * 100) / 1440; // Convert to percentage
+  };
+
+  const scrollToCurrentTime = () => {
+    if (scrollAreaRef.current) {
+      const currentPosition = getCurrentTimePosition();
+      const scrollPosition = (currentPosition / 100) * scrollAreaRef.current.scrollHeight;
+      scrollAreaRef.current.scrollTop = scrollPosition - window.innerHeight / 3;
+    }
+  };
+
+  useEffect(() => {
+    scrollToCurrentTime();
+    const interval = setInterval(() => {
+      const timeLine = document.getElementById('current-time-line');
+      if (timeLine) {
+        timeLine.style.top = `${getCurrentTimePosition()}%`;
+      }
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
   const calculateEventPosition = (time: string) => {
     const [hours, minutes] = time.split(':').map(Number)
     return (hours * 60 + minutes) * (100 / 1440) // (100% / minutes in a day)
@@ -34,17 +53,23 @@ export const Timeline: React.FC<TimelineProps> = ({ events = [], onDelete }) => 
     return (duration / 60) * (100 / 24) // (100% / hours in a day)
   }
 
-  // Get color based on event index
-  const getEventColor = (index: number) => {
-    return EVENT_COLORS[index % EVENT_COLORS.length]
-  }
-
   return (
     <div className="w-64 h-screen bg-background border-l">
-      <ScrollArea className="h-full">
+      <ScrollArea className="h-full" ref={scrollAreaRef}>
         <div className="relative p-4">
           <h2 className="text-lg font-semibold mb-4">Today&apos;s Schedule</h2>
           <div className="relative">
+            {/* Current time indicator */}
+            <div
+              id="current-time-line"
+              className="absolute left-0 right-0 z-50 pointer-events-none"
+              style={{ top: `${getCurrentTimePosition()}%` }}
+            >
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <div className="flex-1 h-[1px] bg-red-500" />
+              </div>
+            </div>
             {HOURS.map((hour) => (
               <div key={hour} className="flex items-center h-20 border-t border-border">
                 <span className="text-xs text-muted-foreground -mt-2">
@@ -59,12 +84,12 @@ export const Timeline: React.FC<TimelineProps> = ({ events = [], onDelete }) => 
             ) : (
               events
                 .sort((a, b) => a.time.localeCompare(b.time))
-                .map((event, index) => (
+                .map((event) => (
                   <TooltipProvider key={event.id}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div
-                          className={`absolute left-8 right-2 rounded p-2 overflow-hidden ${getEventColor(index)}`}
+                          className="absolute left-8 right-2 bg-primary/10 border border-primary/20 rounded p-2 overflow-hidden"
                           style={{
                             top: `${calculateEventPosition(event.time)}%`,
                             height: `${calculateEventHeight(event.duration)}%`,
